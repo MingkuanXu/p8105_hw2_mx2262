@@ -7,3 +7,69 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+```{r } 
+library(tidyverse)
+```
+
+## Problem 1
+
+#### Part A - The Mr. Trash Wheel sheet
+Load trash wheel data, remove useless columns and take a quick look.
+```{r results=FALSE,message=FALSE}
+trash_wheel_data = 
+  readxl::read_excel(
+    path="data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx",
+    sheet="Mr. Trash Wheel",
+    skip=1) %>%
+  janitor::clean_names()
+skimr::skim(trash_wheel_data)
+```
+We find useless columns x15, x16, and x17; remove them. Also we omit rows that do not include dumpster-specific data as instructed. Finally we round the number of sports balls to the nearest integer as instructed.
+
+```{r}
+trash_wheel_data = 
+  select(trash_wheel_data,-x15,-x16,-x17) %>% 
+  drop_na(dumpster) %>%
+  mutate(sports_balls = round(sports_balls))
+
+head(trash_wheel_data)
+```
+
+#### Part B - Precipitation data for 2018 and 2019
+
+We read the precipitation data for 2018 & 2019, drop useless rows, and bind them together.
+```{r}
+precipitation_2018_data = 
+  readxl::read_excel(
+    path="data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx",
+    sheet="2018 Precipitation",
+    skip=1) %>%
+  janitor::clean_names() %>%
+  drop_na(month) %>%
+  mutate(year=2018) %>%
+  relocate(year)
+
+precipitation_2019_data = 
+  readxl::read_excel(
+    path="data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx",
+    sheet="2019 Precipitation",
+    skip=1) %>%
+  janitor::clean_names() %>%
+  drop_na(month) %>%
+  mutate(year=2019) %>%
+  relocate(year)
+
+precipitation_data = 
+  bind_rows(precipitation_2018_data,precipitation_2019_data) %>%
+  mutate(month = month.name[month])
+
+head(precipitation_data)
+```
+
+#### Part C - Summary
+For the dumpster data, the information of `r nrow(trash_wheel_data)` dumpsters were recorded, including the number of `r select(trash_wheel_data,plastic_bottles:sports_balls) %>% janitor::clean_names(case="sentence") %>% names() %>% tolower()` they contained. The average weight is `r mean(pull(trash_wheel_data,weight_tons))` tons; the average volume is `r mean(pull(trash_wheel_data,volume_cubic_yards))` cubic yards. Specifically, the median number of sports balls in a dumpster in 2019 is `r filter(trash_wheel_data, year==2019) %>% pull(sports_balls) %>% median()`.
+
+For the precipitation data, we collected `r rename(precipitation_data,precipitation=total) %>% names()`. Over the `r nrow(precipitation_data)` months of collected data from years `r unique(precipitation_data$year)`, we observe a mean of `r mean(pull(precipitation_data,total))` inches and median of `r median(precipitation_data$total)` inches per month. The total precipitation for year 2018 is `r pull(filter(precipitation_data,year==2018),total) %>% sum()` inches; the total precipitation for year 2019 is `r pull(filter(precipitation_data,year==2019),total) %>% sum()` inches.
+
+
