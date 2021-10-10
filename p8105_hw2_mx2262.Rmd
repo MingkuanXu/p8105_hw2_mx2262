@@ -129,6 +129,62 @@ The snp dataframe contains `r nrow(snp_data)` observations of `r ncol(snp_data)`
 
 The unemployment dataframe contains `r nrow(unemploy_data)` observations of `r ncol(unemploy_data)` variables, representing the percentage of unemployment in each month in the range of years (`r range(pull(unemploy_data,year))`).
 
-The resulting combined dataframe contains `r nrow(full_data)` observations of `r ncol(full_data)` variables. It summarized the information described in the three datasets: info of politicians (including the party of the president, the number of governovs, senators, and representatives), S&P indexes, and unemployment rates, in the range of years (`r range(pull(full_data,year))`).
+The resulting combined dataframe contains `r nrow(full_data)` observations of `r ncol(full_data)` variables. It summarized the information described in the three datasets: years, months, info of politicians (including the party of the president, the number of governovs, senators, and representatives), S&P indexes, and unemployment rates, in the range of years (`r range(pull(full_data,year))`).
+
+## Problem 3
+
+#### Part A - Preprocess data of child names
+```{r}
+
+names_data = read_csv(file="data/Popular_Baby_Names.csv") %>%
+  distinct() %>% # Remove duplicate rows
+  janitor::clean_names() %>%
+  mutate(childs_first_name = tolower(childs_first_name))%>% # Change all names to lower cases.
+  mutate(ethnicity = # Unify names of ethnicity
+           ifelse(ethnicity=="ASIAN AND PACI",
+                  "ASIAN AND PACIFIC ISLANDER",
+                  ethnicity)) %>%
+  mutate(ethnicity = 
+           ifelse(ethnicity=="BLACK NON HISP",
+                  "BLACK NON HISPANIC",
+                  ethnicity)) %>%
+  mutate(ethnicity = 
+           ifelse(ethnicity=="WHITE NON HISP",
+                  "WHITE NON HISPANIC",
+                  ethnicity)) 
+```
+
+#### Part B - Tables for Olivia & most popular names
+
+```{r}
+olivia_data = 
+  filter(names_data,childs_first_name=="olivia") %>% # Find rows
+  select(-gender,-count,-childs_first_name) %>% # Remove useless columns
+  pivot_wider(names_from = year_of_birth,values_from = rank) # Reshape
+
+olivia_data
+
+popular_male_data = 
+  filter(names_data,rank==1) %>%
+  filter(gender=="MALE") %>% # Find rows
+  select(-gender,-count,-rank) %>% # Remove useless columns
+  pivot_wider(names_from = year_of_birth,values_from = childs_first_name) # Reshape
+
+popular_male_data
+```
+
+#### Part C - Scatter Plot
+
+```{r}
+white_male_2016_data = 
+  filter(names_data,ethnicity=="WHITE NON HISPANIC",year_of_birth==2016,gender=="MALE") %>% 
+  select(count,rank,name=childs_first_name)
+
+ggplot(white_male_2016_data, aes(x=rank, y=count)) +
+  geom_point() +
+  xlab("Rank in Popularity") + 
+  ylab("Number of Children")
+```
+
 
 
