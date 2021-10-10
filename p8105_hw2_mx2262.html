@@ -255,6 +255,294 @@ head(precipitation_data)</code></pre>
 <p>For the precipitation data, we collected year, month, precipitation. Over the 24 months of collected data from years 2018, 2019, we observe a mean of 4.345 inches and median of 3.745 inches per month. The total precipitation for year 2018 is 70.33 inches; the total precipitation for year 2019 is 33.95 inches.</p>
 </div>
 </div>
+<div id="problem-2" class="section level2">
+<h2>Problem 2</h2>
+<div id="part-a---preprocess-pols-month.csv" class="section level4">
+<h4>Part A - Preprocess pols-month.csv</h4>
+<pre class="r"><code>pols_data = 
+  read_csv(file = &quot;data/pols-month.csv&quot;,show_col_types = FALSE) %&gt;%
+  separate(mon,c(&quot;year&quot;,&quot;month&quot;,&quot;day&quot;),&quot;-&quot;) %&gt;% # Separate date info
+  mutate(month = month.name[as.integer(month)]) %&gt;% # Transform to month names
+  mutate(president = ifelse(prez_dem==0,&quot;gop&quot;,&quot;dem&quot;)) %&gt;% # Create column president
+  select(-day,-prez_dem,-prez_gop) # Remove useless columns
+
+head(pols_data)</code></pre>
+<pre><code>## # A tibble: 6 × 9
+##   year  month    gov_gop sen_gop rep_gop gov_dem sen_dem rep_dem president
+##   &lt;chr&gt; &lt;chr&gt;      &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt; &lt;chr&gt;    
+## 1 1947  January       23      51     253      23      45     198 dem      
+## 2 1947  February      23      51     253      23      45     198 dem      
+## 3 1947  March         23      51     253      23      45     198 dem      
+## 4 1947  April         23      51     253      23      45     198 dem      
+## 5 1947  May           23      51     253      23      45     198 dem      
+## 6 1947  June          23      51     253      23      45     198 dem</code></pre>
+</div>
+<div id="part-b---preprocess-snp.csv" class="section level4">
+<h4>Part B - Preprocess snp.csv</h4>
+<pre class="r"><code>snp_data = 
+  read_csv(file = &quot;data/snp.csv&quot;,show_col_types = FALSE) %&gt;%
+  separate(date,c(&quot;day&quot;,&quot;month&quot;,&quot;year&quot;),&quot;/&quot;) %&gt;% # Separate date info
+  mutate(month = month.name[as.integer(month)]) %&gt;% # Transform to month names
+  mutate(year = 
+           ifelse(year&gt;30,
+                  paste(&quot;19&quot;,as.character(year),sep=&quot;&quot;),
+                  paste(&quot;20&quot;,as.character(year),sep=&quot;&quot;))) %&gt;% # Full year expression
+  select(-day) %&gt;% # Remove useless column
+  relocate(year,month) %&gt;% # Arrange columns properly
+  rename(snp_close=close) # Rename column
+
+head(snp_data)</code></pre>
+<pre><code>## # A tibble: 6 × 3
+##   year  month    snp_close
+##   &lt;chr&gt; &lt;chr&gt;        &lt;dbl&gt;
+## 1 2015  January      2080.
+## 2 2015  January      2063.
+## 3 2015  January      2107.
+## 4 2015  January      2086.
+## 5 2015  February     2068.
+## 6 2015  February     2104.</code></pre>
+</div>
+<div id="part-c---preprocess-unemployment.csv" class="section level4">
+<h4>Part C - Preprocess unemployment.csv</h4>
+<pre class="r"><code>unemploy_data = read_csv(&quot;data/unemployment.csv&quot;,show_col_types = FALSE) %&gt;%
+  pivot_longer(Jan:Dec,names_to = &quot;month&quot;) %&gt;% # Reshape the data
+  mutate(month=month.name[match(month, month.abb)]) %&gt;% # Change month abb to month name.
+  rename(unemploy_rate=value,year=Year) %&gt;% # Rename column
+  mutate(year=as.character(year))
+head(unemploy_data)</code></pre>
+<pre><code>## # A tibble: 6 × 3
+##   year  month    unemploy_rate
+##   &lt;chr&gt; &lt;chr&gt;            &lt;dbl&gt;
+## 1 1948  January            3.4
+## 2 1948  February           3.8
+## 3 1948  March              4  
+## 4 1948  April              3.9
+## 5 1948  May                3.5
+## 6 1948  June               3.6</code></pre>
+</div>
+<div id="part-d---merge-data-describe" class="section level4">
+<h4>Part D - Merge data &amp; describe</h4>
+<pre class="r"><code>full_data = left_join(pols_data,snp_data,by=c(&quot;year&quot;,&quot;month&quot;))
+full_data = left_join(full_data,unemploy_data,by=c(&quot;year&quot;,&quot;month&quot;))
+skimr::skim(full_data)</code></pre>
+<table>
+<caption>Data summary</caption>
+<tbody>
+<tr class="odd">
+<td align="left">Name</td>
+<td align="left">full_data</td>
+</tr>
+<tr class="even">
+<td align="left">Number of rows</td>
+<td align="left">1391</td>
+</tr>
+<tr class="odd">
+<td align="left">Number of columns</td>
+<td align="left">11</td>
+</tr>
+<tr class="even">
+<td align="left">_______________________</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">Column type frequency:</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">character</td>
+<td align="left">3</td>
+</tr>
+<tr class="odd">
+<td align="left">numeric</td>
+<td align="left">8</td>
+</tr>
+<tr class="even">
+<td align="left">________________________</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">Group variables</td>
+<td align="left">None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: character</strong></p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">skim_variable</th>
+<th align="right">n_missing</th>
+<th align="right">complete_rate</th>
+<th align="right">min</th>
+<th align="right">max</th>
+<th align="right">empty</th>
+<th align="right">n_unique</th>
+<th align="right">whitespace</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">year</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">0</td>
+<td align="right">69</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">month</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">3</td>
+<td align="right">9</td>
+<td align="right">0</td>
+<td align="right">12</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left">president</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">0</td>
+<td align="right">2</td>
+<td align="right">0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: numeric</strong></p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">skim_variable</th>
+<th align="right">n_missing</th>
+<th align="right">complete_rate</th>
+<th align="right">mean</th>
+<th align="right">sd</th>
+<th align="right">p0</th>
+<th align="right">p25</th>
+<th align="right">p50</th>
+<th align="right">p75</th>
+<th align="right">p100</th>
+<th align="left">hist</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">gov_gop</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">22.49</td>
+<td align="right">5.71</td>
+<td align="right">12.00</td>
+<td align="right">18.00</td>
+<td align="right">22.00</td>
+<td align="right">28.0</td>
+<td align="right">34.00</td>
+<td align="left">▆▇▇▆▅</td>
+</tr>
+<tr class="even">
+<td align="left">sen_gop</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">46.01</td>
+<td align="right">6.40</td>
+<td align="right">32.00</td>
+<td align="right">42.00</td>
+<td align="right">46.00</td>
+<td align="right">51.0</td>
+<td align="right">56.00</td>
+<td align="left">▃▃▇▇▇</td>
+</tr>
+<tr class="odd">
+<td align="left">rep_gop</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">194.36</td>
+<td align="right">28.75</td>
+<td align="right">141.00</td>
+<td align="right">176.00</td>
+<td align="right">195.00</td>
+<td align="right">222.0</td>
+<td align="right">253.00</td>
+<td align="left">▃▇▆▃▅</td>
+</tr>
+<tr class="even">
+<td align="left">gov_dem</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">27.19</td>
+<td align="right">5.96</td>
+<td align="right">17.00</td>
+<td align="right">22.00</td>
+<td align="right">28.00</td>
+<td align="right">33.0</td>
+<td align="right">41.00</td>
+<td align="left">▆▅▇▆▂</td>
+</tr>
+<tr class="odd">
+<td align="left">sen_dem</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">54.47</td>
+<td align="right">7.38</td>
+<td align="right">44.00</td>
+<td align="right">48.00</td>
+<td align="right">54.00</td>
+<td align="right">58.0</td>
+<td align="right">71.00</td>
+<td align="left">▇▆▇▃▂</td>
+</tr>
+<tr class="even">
+<td align="left">rep_dem</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">245.26</td>
+<td align="right">31.27</td>
+<td align="right">188.00</td>
+<td align="right">211.00</td>
+<td align="right">250.00</td>
+<td align="right">268.0</td>
+<td align="right">301.00</td>
+<td align="left">▇▂▇▇▅</td>
+</tr>
+<tr class="odd">
+<td align="left">snp_close</td>
+<td align="right">604</td>
+<td align="right">0.57</td>
+<td align="right">474.89</td>
+<td align="right">545.96</td>
+<td align="right">17.05</td>
+<td align="right">83.74</td>
+<td align="right">138.53</td>
+<td align="right">941.8</td>
+<td align="right">2107.39</td>
+<td align="left">▇▁▂▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">unemploy_rate</td>
+<td align="right">12</td>
+<td align="right">0.99</td>
+<td align="right">5.84</td>
+<td align="right">1.63</td>
+<td align="right">2.50</td>
+<td align="right">4.70</td>
+<td align="right">5.70</td>
+<td align="right">6.9</td>
+<td align="right">10.80</td>
+<td align="left">▃▇▅▂▁</td>
+</tr>
+</tbody>
+</table>
+<p>The pols dataframe contains 822 observations of 9 variables related to the number of national politicians who are democratic or republican in the range of years (1947, 2015).</p>
+<p>The snp dataframe contains 787 observations of 3 variables related to Standard &amp; Poor’s stock market index (S&amp;P), often used as a representative measure of stock market as a whole,in the range of years (1950, 2015).</p>
+<p>The unemployment dataframe contains 816 observations of 3 variables, representing the percentage of unemployment in each month in the range of years (1948, 2015).</p>
+<p>The resulting combined dataframe contains 1391 observations of 11 variables. It summarized the information described in the three datasets: info of politicians (including the party of the president, the number of governovs, senators, and representatives), S&amp;P indexes, and unemployment rates, in the range of years (1947, 2015).</p>
+</div>
+</div>
 
 
 

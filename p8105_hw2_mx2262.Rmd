@@ -72,4 +72,63 @@ For the dumpster data, the information of `r nrow(trash_wheel_data)` dumpsters w
 
 For the precipitation data, we collected `r rename(precipitation_data,precipitation=total) %>% names()`. Over the `r nrow(precipitation_data)` months of collected data from years `r unique(precipitation_data$year)`, we observe a mean of `r mean(pull(precipitation_data,total))` inches and median of `r median(precipitation_data$total)` inches per month. The total precipitation for year 2018 is `r pull(filter(precipitation_data,year==2018),total) %>% sum()` inches; the total precipitation for year 2019 is `r pull(filter(precipitation_data,year==2019),total) %>% sum()` inches.
 
+## Problem 2
+
+#### Part A - Preprocess pols-month.csv
+
+```{r}
+pols_data = 
+  read_csv(file = "data/pols-month.csv",show_col_types = FALSE) %>%
+  separate(mon,c("year","month","day"),"-") %>% # Separate date info
+  mutate(month = month.name[as.integer(month)]) %>% # Transform to month names
+  mutate(president = ifelse(prez_dem==0,"gop","dem")) %>% # Create column president
+  select(-day,-prez_dem,-prez_gop) # Remove useless columns
+
+head(pols_data)
+```
+#### Part B - Preprocess snp.csv 
+```{r}
+snp_data = 
+  read_csv(file = "data/snp.csv",show_col_types = FALSE) %>%
+  separate(date,c("day","month","year"),"/") %>% # Separate date info
+  mutate(month = month.name[as.integer(month)]) %>% # Transform to month names
+  mutate(year = 
+           ifelse(year>30,
+                  paste("19",as.character(year),sep=""),
+                  paste("20",as.character(year),sep=""))) %>% # Full year expression
+  select(-day) %>% # Remove useless column
+  relocate(year,month) %>% # Arrange columns properly
+  rename(snp_close=close) # Rename column
+
+head(snp_data)
+```
+
+#### Part C - Preprocess unemployment.csv
+
+```{r}
+unemploy_data = read_csv("data/unemployment.csv",show_col_types = FALSE) %>%
+  pivot_longer(Jan:Dec,names_to = "month") %>% # Reshape the data
+  mutate(month=month.name[match(month, month.abb)]) %>% # Change month abb to month name.
+  rename(unemploy_rate=value,year=Year) %>% # Rename column
+  mutate(year=as.character(year))
+head(unemploy_data)
+```
+
+#### Part D - Merge data & describe
+
+```{r}
+full_data = left_join(pols_data,snp_data,by=c("year","month"))
+full_data = left_join(full_data,unemploy_data,by=c("year","month"))
+skimr::skim(full_data)
+```
+
+The pols dataframe contains `r nrow(pols_data)` observations of `r ncol(pols_data)` variables related to the number of national politicians who are democratic or republican in the range of years
+(`r range(pull(pols_data,year)) `). 
+
+The snp dataframe contains `r nrow(snp_data)` observations of `r ncol(snp_data)` variables related to Standard & Poor’s stock market index (S&P), often used as a representative measure of stock market as a whole,in the range of years (`r range(pull(snp_data,year))`).
+
+The unemployment dataframe contains `r nrow(unemploy_data)` observations of `r ncol(unemploy_data)` variables, representing the percentage of unemployment in each month in the range of years (`r range(pull(unemploy_data,year))`).
+
+The resulting combined dataframe contains `r nrow(full_data)` observations of `r ncol(full_data)` variables. It summarized the information described in the three datasets: info of politicians (including the party of the president, the number of governovs, senators, and representatives), S&P indexes, and unemployment rates, in the range of years (`r range(pull(full_data,year))`).
+
 
