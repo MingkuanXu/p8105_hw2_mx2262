@@ -134,7 +134,7 @@ The resulting combined dataframe contains `r nrow(full_data)` observations of `r
 ## Problem 3
 
 #### Part A - Preprocess data of child names
-```{r}
+```{r message=FALSE,warning=FALSE}
 
 names_data = read_csv(file="data/Popular_Baby_Names.csv") %>%
   distinct() %>% # Remove duplicate rows
@@ -159,18 +159,18 @@ names_data = read_csv(file="data/Popular_Baby_Names.csv") %>%
 ```{r}
 olivia_data = 
   filter(names_data,childs_first_name=="olivia") %>% # Find rows
-  select(-gender,-count,-childs_first_name) %>% # Remove useless columns
+  select(-gender,-count,-childs_first_name,Ethnicity=ethnicity) %>% # Remove useless columns
   pivot_wider(names_from = year_of_birth,values_from = rank) # Reshape
 
-olivia_data
+knitr::kable(olivia_data, format="markdown")
 
 popular_male_data = 
   filter(names_data,rank==1) %>%
   filter(gender=="MALE") %>% # Find rows
-  select(-gender,-count,-rank) %>% # Remove useless columns
+  select(-gender,-count,-rank,Ethnicity=ethnicity) %>% # Remove useless columns
   pivot_wider(names_from = year_of_birth,values_from = childs_first_name) # Reshape
 
-popular_male_data
+knitr::kable(popular_male_data, format="markdown")
 ```
 
 #### Part C - Scatter Plot
@@ -181,7 +181,8 @@ white_male_2016_data =
   select(count,rank,name=childs_first_name)
 
 ggplot(white_male_2016_data, aes(x=rank, y=count)) +
-  geom_point() +
+  geom_point()+
+  # geom_text(aes(label=name),size = 1, vjust = -5) +
   xlab("Rank in Popularity") + 
   ylab("Number of Children")
 ```
